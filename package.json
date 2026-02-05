@@ -1,0 +1,82 @@
+{
+  "name": "mac-monitor",
+  "version": "1.0.0",
+  "description": "MacBook System Monitor - Desktop App",
+  "author": "Mac Monitor",
+  "main": "electron.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "npm run build:client && electron-builder",
+    "build:client": "cd client && npm run build",
+    "dist": "npm run build:client && electron-builder --mac",
+    "dist:dir": "npm run build:client && electron-builder --dir"
+  },
+  "buildResources": "build",
+  "publish": null,
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "systeminformation": "^5.21.20"
+  },
+  "build": {
+    "appId": "com.macmonitor.app",
+    "productName": "Mac Monitor",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "electron.js",
+      "server/**/*",
+      "client/dist/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "server",
+        "to": "server"
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": "x64"
+        },
+        {
+          "target": "zip",
+          "arch": "x64"
+        }
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    }
+  }
+}
