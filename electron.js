@@ -26,7 +26,12 @@ function startServer() {
   console.log('Resources path:', process.resourcesPath);
   
   serverProcess = spawn('node', ['index.js'], {
-    env: { ...process.env, NODE_ENV: 'production', PORT: '3001' },
+    env: { 
+      ...process.env, 
+      NODE_ENV: 'production', 
+      PORT: '3001',
+      APP_RESOURCE_PATH: process.resourcesPath || app.getAppPath()
+    },
     stdio: 'inherit',
     cwd: serverDir,
     detached: false

@@ -16,25 +16,43 @@ app.use(express.json());
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  // Try multiple possible paths for the client dist folder
   const fs = await import('fs');
 
-  // In packaged app: Resources/client/dist (server is in Resources/server/)
-  const resourcesPath = process.resourcesPath ? path.join(process.resourcesPath, 'client', 'dist') : null;
-  // In development: ../client/dist
-  const clientDistPath = path.join(__dirname, '../../client/dist');
-  // In dev server: client/dist from project root
-  const devDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
-
+  // Get client dist path from environment variable (set by Electron main process)
+  // or try to find it relative to server location
   let staticPath = null;
 
-  if (resourcesPath && fs.existsSync(resourcesPath)) {
-    staticPath = resourcesPath;
-  } else if (fs.existsSync(clientDistPath)) {
-    staticPath = clientDistPath;
-  } else if (fs.existsSync(devDistPath)) {
-    staticPath = devDistPath;
+  // Priority 1: Use APP_RESOURCE_PATH environment variable (set by Electron)
+  if (process.env.APP_RESOURCE_PATH) {
+    const envPath = path.join(process.env.APP_RESOURCE_PATH, 'client', 'dist');
+    if (fs.existsSync(envPath)) {
+      staticPath = envPath;
+      console.log('Using APP_RESOURCE_PATH:', staticPath);
+    }
   }
+
+  // Priority 2: Try ../../client/dist (server is in Resources/server/, client in Resources/client/dist/)
+  if (!staticPath) {
+    const relativePath = path.join(__dirname, '../../client/dist');
+    if (fs.existsSync(relativePath)) {
+      staticPath = relativePath;
+      console.log('Using relative path:', staticPath);
+    }
+  }
+
+  // Priority 3: Try ../../../client/dist (in case of different structure)
+  if (!staticPath) {
+    const altPath = path.join(__dirname, '../../../client/dist');
+    if (fs.existsSync(altPath)) {
+      staticPath = altPath;
+      console.log('Using alternative path:', staticPath);
+    }
+  }
+
+  // Log all attempts for debugging
+  console.log('Server __dirname:', __dirname);
+  console.log('APP_RESOURCE_PATH:', process.env.APP_RESOURCE_PATH);
+  console.log('CWD:', process.cwd());
 
   if (staticPath) {
     console.log('Serving static files from:', staticPath);
