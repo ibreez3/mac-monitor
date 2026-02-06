@@ -81,6 +81,9 @@ jobs:
             iconutil -c icns build/icon.iconset
           fi
 
+      - name: Create server bundle
+        run: node scripts/copy-server-deps.js
+
       - name: Create entitlements
         run: |
           cat > build/entitlements.mac.plist << 'PLIST'
