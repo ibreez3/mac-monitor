@@ -33,6 +33,9 @@ jobs:
       - name: Build client
         run: npm run build:client
 
+      - name: Install Pillow for icon generation
+        run: pip3 install Pillow
+
       - name: Create app icon
         run: |
           mkdir -p build
