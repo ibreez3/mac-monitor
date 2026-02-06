@@ -7,6 +7,7 @@
   "scripts": {
     "start": "electron .",
     "prebuild": "node scripts/copy-server-deps.js",
+    "predist": "node scripts/copy-server-deps.js",
     "build": "npm run build:client && electron-builder",
     "build:client": "cd client && npm run build",
     "dist": "npm run build:client && electron-builder --mac",
