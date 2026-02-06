@@ -34,3 +34,4 @@ logs/
 .cache/
 build/
 dist/
+server-bundle/

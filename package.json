@@ -6,6 +6,7 @@
   "main": "electron.js",
   "scripts": {
     "start": "electron .",
+    "prebuild": "node scripts/copy-server-deps.js",
     "build": "npm run build:client && electron-builder",
     "build:client": "cd client && npm run build",
     "dist": "npm run build:client && electron-builder --mac",
@@ -33,13 +34,22 @@
     "files": [
       "electron.js",
       "preload.js",
-      "server/**/*",
       "client/dist/**/*",
-      "node_modules/**/*",
       "build/icon.icns"
     ],
+    "extraResources": [
+      {
+        "from": "server-bundle",
+        "to": "server",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "client/dist",
+        "to": "client/dist",
+        "filter": ["**/*"]
+      }
+    ],
     "asarUnpack": [
-      "server/**/*",
       "node_modules/systeminformation/**/*"
     ],
     "mac": {

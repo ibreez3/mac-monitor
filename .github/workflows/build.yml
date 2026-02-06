@@ -33,11 +33,12 @@ jobs:
       - name: Build client
         run: npm run build:client
 
-      - name: Install Pillow for icon generation
-        run: pip3 install Pillow
-
-      - name: Create app icon
+      - name: Install Pillow and create app icon
         run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install Pillow
+
           mkdir -p build
           python3 << 'PYSCRIPT'
           from PIL import Image, ImageDraw, ImageFont

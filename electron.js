@@ -7,36 +7,29 @@ let mainWindow = null;
 
 // Get the correct path for server files in production
 function getServerPath() {
-  // Try multiple possible paths for the packaged app
-  const possiblePaths = [
-    // When unpacked from asar
-    path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'index.js'),
-    path.join(app.getAppPath(), 'app.asar.unpacked', 'server', 'index.js'),
-    // In development or normal asar
-    path.join(__dirname, 'server', 'index.js'),
-    path.join(process.resourcesPath, 'app', 'server', 'index.js'),
-  ];
-  
-  for (const p of possiblePaths) {
-    console.log('Checking path:', p);
-    return p; // Return first path, spawn will error if it doesn't exist
+  // In production, server is in Resources/server (from extraResources)
+  if (process.resourcesPath) {
+    return path.join(process.resourcesPath, 'server', 'index.js');
   }
-  
+  // In development
   return path.join(__dirname, 'server', 'index.js');
 }
 
 // Start the Node.js server
 function startServer() {
   const serverPath = getServerPath();
+  const serverDir = path.dirname(serverPath);
   
   console.log('Starting server from:', serverPath);
+  console.log('Server directory:', serverDir);
   console.log('App path:', app.getAppPath());
   console.log('Resources path:', process.resourcesPath);
   
-  serverProcess = spawn('node', [serverPath], {
+  serverProcess = spawn('node', ['index.js'], {
     env: { ...process.env, NODE_ENV: 'production', PORT: '3001' },
     stdio: 'inherit',
-    cwd: path.dirname(serverPath)
+    cwd: serverDir,
+    detached: false
   });
 
   serverProcess.on('error', (err) => {
@@ -68,7 +61,7 @@ function createWindow() {
     title: 'Mac Monitor'
   });
 
-  // Load from HTTP server (server serves the static files)
+  // Load from HTTP server
   const startUrl = 'http://localhost:3001';
   
   console.log('Loading app from:', startUrl);
@@ -77,7 +70,7 @@ function createWindow() {
     console.error('Failed to load URL:', err);
   });
 
-  // Open DevTools for debugging (remove in production)
+  // Open DevTools for debugging (comment out for production)
   mainWindow.webContents.openDevTools();
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
@@ -109,7 +102,14 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   if (serverProcess) {
-    serverProcess.kill();
+    console.log('Killing server process...');
+    serverProcess.kill('SIGTERM');
+    // Also kill by PID to be sure
+    try {
+      process.kill(-serverProcess.pid, 'SIGTERM');
+    } catch (e) {
+      // Ignore
+    }
   }
 });
 

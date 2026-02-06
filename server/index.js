@@ -17,24 +17,31 @@ app.use(express.json());
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   // Try multiple possible paths for the client dist folder
-  const clientDistPath = path.join(__dirname, '../client/dist');
-  const appPathDist = path.join(__dirname, '../../client/dist');
-  const resourcesPath = process.resourcesPath ? path.join(process.resourcesPath, 'client', 'dist') : null;
-
-  // Use the first path that exists
   const fs = await import('fs');
-  let staticPath = clientDistPath;
 
-  if (fs.existsSync(clientDistPath)) {
-    staticPath = clientDistPath;
-  } else if (fs.existsSync(appPathDist)) {
-    staticPath = appPathDist;
-  } else if (resourcesPath && fs.existsSync(resourcesPath)) {
+  // In packaged app: Resources/client/dist (server is in Resources/server/)
+  const resourcesPath = process.resourcesPath ? path.join(process.resourcesPath, 'client', 'dist') : null;
+  // In development: ../client/dist
+  const clientDistPath = path.join(__dirname, '../../client/dist');
+  // In dev server: client/dist from project root
+  const devDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
+
+  let staticPath = null;
+
+  if (resourcesPath && fs.existsSync(resourcesPath)) {
     staticPath = resourcesPath;
+  } else if (fs.existsSync(clientDistPath)) {
+    staticPath = clientDistPath;
+  } else if (fs.existsSync(devDistPath)) {
+    staticPath = devDistPath;
   }
 
-  console.log('Serving static files from:', staticPath);
-  app.use(express.static(staticPath));
+  if (staticPath) {
+    console.log('Serving static files from:', staticPath);
+    app.use(express.static(staticPath));
+  } else {
+    console.error('Could not find client/dist folder!');
+  }
 }
 
 const httpServer = createServer(app);
