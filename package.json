@@ -32,15 +32,15 @@
     },
     "files": [
       "electron.js",
+      "preload.js",
       "server/**/*",
       "client/dist/**/*",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "build/icon.icns"
     ],
-    "extraResources": [
-      {
-        "from": "server",
-        "to": "server"
-      }
+    "asarUnpack": [
+      "server/**/*",
+      "node_modules/systeminformation/**/*"
     ],
     "mac": {
       "target": [

@@ -16,7 +16,25 @@ app.use(express.json());
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/dist')));
+  // Try multiple possible paths for the client dist folder
+  const clientDistPath = path.join(__dirname, '../client/dist');
+  const appPathDist = path.join(__dirname, '../../client/dist');
+  const resourcesPath = process.resourcesPath ? path.join(process.resourcesPath, 'client', 'dist') : null;
+
+  // Use the first path that exists
+  const fs = await import('fs');
+  let staticPath = clientDistPath;
+
+  if (fs.existsSync(clientDistPath)) {
+    staticPath = clientDistPath;
+  } else if (fs.existsSync(appPathDist)) {
+    staticPath = appPathDist;
+  } else if (resourcesPath && fs.existsSync(resourcesPath)) {
+    staticPath = resourcesPath;
+  }
+
+  console.log('Serving static files from:', staticPath);
+  app.use(express.static(staticPath));
 }
 
 const httpServer = createServer(app);

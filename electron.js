@@ -1,18 +1,42 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
-const url = require('url');
 
 let serverProcess = null;
 let mainWindow = null;
 
+// Get the correct path for server files in production
+function getServerPath() {
+  // Try multiple possible paths for the packaged app
+  const possiblePaths = [
+    // When unpacked from asar
+    path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'index.js'),
+    path.join(app.getAppPath(), 'app.asar.unpacked', 'server', 'index.js'),
+    // In development or normal asar
+    path.join(__dirname, 'server', 'index.js'),
+    path.join(process.resourcesPath, 'app', 'server', 'index.js'),
+  ];
+  
+  for (const p of possiblePaths) {
+    console.log('Checking path:', p);
+    return p; // Return first path, spawn will error if it doesn't exist
+  }
+  
+  return path.join(__dirname, 'server', 'index.js');
+}
+
 // Start the Node.js server
 function startServer() {
-  const serverPath = path.join(__dirname, 'server', 'index.js');
+  const serverPath = getServerPath();
+  
+  console.log('Starting server from:', serverPath);
+  console.log('App path:', app.getAppPath());
+  console.log('Resources path:', process.resourcesPath);
   
   serverProcess = spawn('node', [serverPath], {
-    env: { ...process.env, NODE_ENV: 'production' },
-    stdio: 'inherit'
+    env: { ...process.env, NODE_ENV: 'production', PORT: '3001' },
+    stdio: 'inherit',
+    cwd: path.dirname(serverPath)
   });
 
   serverProcess.on('error', (err) => {
@@ -23,9 +47,9 @@ function startServer() {
     console.log(`Server exited with code ${code}`);
   });
 
-  // Wait a bit for the server to start
+  // Wait for server to start
   return new Promise((resolve) => {
-    setTimeout(resolve, 2000);
+    setTimeout(resolve, 3000);
   });
 }
 
@@ -38,25 +62,27 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      webSecurity: false
     },
     title: 'Mac Monitor'
   });
 
-  // In development, load from dev server
-  // In production, load from built files
-  const startUrl = url.format({
-    pathname: path.join(__dirname, 'client', 'dist', 'index.html'),
-    protocol: 'file:',
-    slashes: true
+  // Load from HTTP server (server serves the static files)
+  const startUrl = 'http://localhost:3001';
+  
+  console.log('Loading app from:', startUrl);
+
+  mainWindow.loadURL(startUrl).catch(err => {
+    console.error('Failed to load URL:', err);
   });
 
-  mainWindow.loadURL(startUrl);
+  // Open DevTools for debugging (remove in production)
+  mainWindow.webContents.openDevTools();
 
-  // Open DevTools in development
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.webContents.openDevTools();
-  }
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription);
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -82,8 +108,12 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  // Kill the server process when app quits
   if (serverProcess) {
     serverProcess.kill();
   }
+});
+
+// IPC handlers
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
 });
